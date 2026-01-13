@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+.venv/
+venv/
+
+# OS junk
+.DS_Store
+
+# Editor
+.vscode/
+
+# Output
+output/
+!output/.gitkeep
+stems/
+
+# upload
+uploads/
+!uploads/.gitkeep
