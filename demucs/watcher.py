@@ -9,6 +9,7 @@ UPLOADS = "/app/uploads"
 OUTPUT = "/app/output"
 MODEL = os.environ.get("DEMUCS_MODEL", "htdemucs_6s")
 AUTO_TRANSCRIBE = os.environ.get("AUTO_TRANSCRIBE", "true").lower() in ("1", "true", "yes", "on")
+MIDI_PRESET = os.environ.get("MIDI_PRESET", "clean").lower()
 SLEEP = 2
 
 STATUS_DIR = Path(OUTPUT) / "status"
@@ -92,6 +93,7 @@ def transcribe_outputs(filename: str, started_at: str, out_dir: Path, log_lines:
         "startedAt": started_at,
         "progress": 90,
         "outputs": collect_outputs(out_dir),
+        "midiPreset": MIDI_PRESET,
         "logs": log_lines[-200:],
     })
 
@@ -108,6 +110,8 @@ def transcribe_outputs(filename: str, started_at: str, out_dir: Path, log_lines:
             str(output_path),
             "--instrument",
             instrument,
+            "--preset",
+            MIDI_PRESET,
         ]
         print(f"[midi] running: {' '.join(cmd)}")
 
@@ -192,6 +196,7 @@ def process_file(filepath):
             "progress": 100,
             "outputs": outputs,
             "midiOutputs": midi_outputs,
+            "midiPreset": MIDI_PRESET,
             "transcriptionErrors": transcription_errors,
             "logs": log_lines[-200:]
         })
@@ -222,8 +227,12 @@ def main():
     os.makedirs(OUTPUT, exist_ok=True)
     ensure_status_dir()
 
+    if MIDI_PRESET not in {"clean", "draft"}:
+        raise ValueError(f"unsupported MIDI_PRESET: {MIDI_PRESET}")
+
     print("[demucs] watcher started, watching:", UPLOADS)
     print("[midi] automatic transcription:", "enabled" if AUTO_TRANSCRIBE else "disabled")
+    print("[midi] preset:", MIDI_PRESET)
     while True:
         try:
             for entry in os.listdir(UPLOADS):
