@@ -13,6 +13,7 @@ SLEEP = 2
 
 STATUS_DIR = Path(OUTPUT) / "status"
 MAX_LOG_LINES = 200
+SUPPORTED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"}
 TRANSCRIBABLE_STEMS = {
     "bass.wav": "bass",
     "guitar.wav": "guitar",
@@ -36,6 +37,11 @@ def write_status(filename, obj):
         atomic_write(fp, json.dumps(obj, indent=2, ensure_ascii=False))
     except Exception as e:
         print("[demucs] failed to write status:", e)
+
+
+def is_supported_audio_file(filename: str) -> bool:
+    path = Path(filename)
+    return not path.name.startswith(".") and path.suffix.lower() in SUPPORTED_AUDIO_EXTENSIONS
 
 
 def already_processed(filename):
@@ -224,7 +230,8 @@ def main():
                 pathp = os.path.join(UPLOADS, entry)
                 if os.path.isdir(pathp):
                     continue
-                if entry.endswith(".tmp") or entry.endswith(".partial"):
+                if not is_supported_audio_file(entry):
+                    print(f"[demucs] skipping unsupported file: {entry}")
                     continue
                 if not already_processed(entry):
                     qpath = STATUS_DIR / f"{entry}.json"
