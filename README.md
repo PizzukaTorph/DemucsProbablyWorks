@@ -3,6 +3,7 @@
 A lightweight, questionably-engineered wrapper around Demucs. Built for people who “just want to split a track” without reading 40 pages of academic papers or compiling PyTorch at 3 AM.
 
 ## Why this exists
+
 Because Demucs is amazing, but:
 
 - sometimes you just want to throw a file at it and hope for the best
@@ -11,101 +12,93 @@ Because Demucs is amazing, but:
 - and mostly because no one had made a tool that openly admits it probably works
 
 ## What it does
+
 - Accepts an audio file
 - Sends it to Demucs for separation
 - Crosses fingers
 - Returns stems (vocals, bass, drums, etc.)
-- Automatically generates draft MIDI files for `bass.wav`, `guitar.wav`, and `piano.wav`
-
-MIDI transcription is enabled by default. Set `AUTO_TRANSCRIBE=false` on the Demucs worker to disable it.
-
-## What it does NOT do
-- Improve Demucs
-- Be faster than Demucs
-- Be smarter than Demucs
-- Replace Demucs
-- Promise production-ready tablature from distorted or polyphonic audio
-
-If the output sounds odd, that’s likely Demucs — not this wrapper.
+- Generates draft MIDI and JSON note reports for bass, guitar, and piano stems
 
 ## Requirements
-- Python (for the Demucs worker)
-- Docker & docker-compose (recommended for easy setup)
-- A bit of patience (Demucs can be slow on CPU)
 
-## Installation (quick)
-Clone the repo, then use docker-compose:
+- Python for the Demucs worker
+- Docker and Docker Compose
+- A bit of patience, especially on CPU
+
+## Installation
 
 ```bash
 git clone <repo-url>
-cd project-demucs
-docker-compose build
-docker-compose up -d
+cd DemucsProbablyWorks
+docker compose build
+docker compose up -d
 ```
 
-After pulling transcription changes, rebuild the worker image so the new Python dependencies and scripts are installed:
+Open the web UI at `http://localhost:3000`.
 
-```bash
-docker compose build demucs
-docker compose up -d demucs
-```
+## Output
 
-Note: building the Demucs image can take time and requires network access to download Python packages and models.
-
-## Usage
-Open the web UI at: http://localhost:3000
-
-Upload a file and choose a model. The backend saves the file to `./uploads`; the Demucs worker separates it into `./output` and then transcribes supported melodic stems.
-
-For a song named `song.wav`, expected output includes:
+After separation and transcription:
 
 ```text
-output/htdemucs_6s/song/
-├── bass.wav
-├── bass.mid
-├── bass.json
-├── drums.wav
-├── guitar.wav
-├── guitar.mid
-├── guitar.json
-├── piano.wav
-├── piano.mid
-├── piano.json
-├── vocals.wav
-└── other.wav
+output/htdemucs_6s/<track>/
+  drums.wav
+  bass.wav
+  bass.mid
+  bass.json
+  guitar.wav
+  guitar.mid
+  guitar.json
+  piano.wav
+  piano.mid
+  piano.json
+  vocals.wav
+  other.wav
 ```
 
-Only stems produced by the selected Demucs model can be transcribed. The default `htdemucs_6s` model produces separate guitar and piano stems.
+## MIDI presets
 
-### Manual transcription
+Automatic transcription uses the `clean` preset by default. It applies pitch-confidence filtering, median smoothing, minimum-note filtering, semitone tolerance, nearby-note merging, and final quantization.
+
+```yaml
+demucs:
+  environment:
+    MIDI_PRESET: clean
+```
+
+Available presets:
+
+- `clean`: aggressive cleanup for tablature and manual editing
+- `draft`: preserves more detail but produces noisier MIDI
+
+Manual usage:
 
 ```bash
 python /app/transcribe.py \
   /app/output/htdemucs_6s/song/bass.wav \
   /app/output/htdemucs_6s/song/bass.mid \
-  --instrument bass
+  --instrument bass \
+  --preset clean
 ```
 
-### Status & progress
-The worker writes per-file status JSON into `output/status/<filename>.json`. During MIDI generation, status changes to `transcribing`. The completed status includes `midiOutputs` and any non-fatal `transcriptionErrors`.
+The current transcription engine is monophonic. Bass generally produces the best results. Chord-heavy or distorted guitar and piano stems still require manual correction; a polyphonic backend is planned separately rather than forcing a large TensorFlow dependency into the default worker image.
 
 ## Files and directories
-`backend/` — Node.js backend (serves UI, handles uploads)<br>
-`demucs/` — Demucs worker image (watches uploads, separates audio, generates draft MIDI)<br>
-`uploads/` — incoming files (mounted into containers)<br>
-`output/` — generated stems, MIDI files, reports, and status JSON files<br>
 
-## Support
-If you find this useful, you can support the project:
+- `backend/` — Node.js backend and web UI
+- `demucs/` — Demucs worker and MIDI transcription code
+- `uploads/` — incoming files
+- `output/` — generated stems, MIDI files, reports, and status JSON
 
-[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/pizzu)
+The worker ignores hidden files such as `.gitkeep` and only processes supported audio extensions.
 
-## Contributing
-Pull requests welcome. Especially if they:
+## Tests
 
-- add more helpful messages (or sarcasm)
-- remove unnecessary code
-- make the project look more serious than it actually is
+```bash
+cd demucs
+python -m unittest discover -s tests
+```
 
 ## License
+
 MIT
