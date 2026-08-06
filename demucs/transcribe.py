@@ -13,8 +13,8 @@ def main() -> int:
     parser.add_argument("input", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--instrument", choices=("bass", "guitar", "piano"), required=True)
+    parser.add_argument("--preset", choices=("clean", "draft"), default="clean")
     parser.add_argument("--subdivisions", type=int, default=4, help="Quantization subdivisions per beat")
-    parser.add_argument("--min-note-ms", type=int, default=80)
     args = parser.parse_args()
 
     if not args.input.is_file():
@@ -27,11 +27,16 @@ def main() -> int:
         args.output,
         TranscriptionConfig(
             instrument=args.instrument,
+            preset=args.preset,
             subdivisions_per_beat=args.subdivisions,
-            min_note_ms=args.min_note_ms,
         ),
     )
-    print(json.dumps({key: report[key] for key in ("output", "instrument", "bpm", "notes")}, indent=2))
+    print(
+        json.dumps(
+            {key: report[key] for key in ("output", "instrument", "preset", "bpm", "notes")},
+            indent=2,
+        )
+    )
     return 0
 
 
