@@ -41,6 +41,8 @@ services:
       - ./backend/public:/app/backend/public
     environment:
       DEMUCS_MODEL: htdemucs_6s
+      AUTO_TRANSCRIBE: "true"
+      MIDI_PRESET: clean
 
 volumes:
   db_data:
